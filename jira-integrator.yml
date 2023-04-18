@@ -1,0 +1,37 @@
+name: Jira Updater
+
+on:
+  pull_request_target:
+    branches: [ master ]
+jobs:
+  jira-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install requests
+        run: |
+          echo "target branch name is ${{ github.base_ref }}"
+          python -m pip install --upgrade pip
+          pip install requests
+          curl -s https://raw.githubusercontent.com/gajen-kal/jira-updater/main/jira-updater.py | python -
+        env: 
+          ISSUE: ${{ github.event.pull_request.title }}
+          JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_URL }}
+          PULL_REQUEST_URL: ${{ github.event.pull_request.html_url }}
+          PR_MESSAGE: ${{ github.event.pull_request.title }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          GIT_TOKEN: ${{ secrets.PR_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO_NAME: ${{ github.repository }}
+          TARGET_BRANCH: ${{ github.base_ref }}
+          
