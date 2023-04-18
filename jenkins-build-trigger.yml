@@ -1,0 +1,61 @@
+name: Trigger Jenikins Build
+on:
+  push:
+    branches: 
+      - 'master'
+    paths:
+      - 'bills-consumer/**'
+      - 'bills-service/**'
+      - 'bills/**'
+      - 'kbus-integration/**'
+
+jobs:
+  job_name:
+    name: Trigger Jenikins Build
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      - name: Determine if bills-consumer
+        if: contains(github.event.path , 'bills-consumer/')
+        run: echo "SERVICE_NAME=bills-consumer" >> $GITHUB_ENV
+        
+      - name: Determine if bills-service
+        if: contains(github.event.path , 'bills-service/')
+        run: echo "SERVICE_NAME=bills-service" >> $GITHUB_ENV  
+        
+      - name: Determine if bills-service
+        if: contains(github.event.path , 'bills/')
+        run: echo "SERVICE_NAME=bills" >> $GITHUB_ENV
+        
+      - name: Determine if bills-service
+        if: contains(github.event.path , 'kbus-integration/')
+        run: echo "SERVICE_NAME=kbus-integration" >> $GITHUB_ENV 
+
+      - name: Determine if master branch
+        if: contains(env.BRANCH, 'master')
+        run: |
+            echo "JENKINS_URL=${{ vars.CICD_PP_URL }}" >> $GITHUB_ENV
+            echo "JENKINS_TOKEN=${{ vars.CICD_PP }}" >> $GITHUB_ENV 
+            
+      - name: Determine if Dev or Stage branch
+        if: contains(env.BRANCH, 'stage') || contains(env.BRANCH, 'develop')
+        run: |
+            echo "JENKINS_URL=${{ vars.CICD_SANDBOX_URL }}" >> $GITHUB_ENV
+            echo "JENKINS_TOKEN=${{ vars.CICD_SANDBOX }}" >> $GITHUB_ENV 
+                 
+      - name: Triggering Jenkins Build
+        uses: toptal/jenkins-job-trigger-action@master
+        with:
+          jenkins_url: ${{ env.JENKINS_URL }}
+          jenkins_user: ${{ secrets.CICD_USERNAME }}
+          jenkins_token: ${{ env.JENKINS_TOKEN }}
+          # proxy: ${{ secrets.JENKINS_PROXY }}
+          job_name: "builds/job/core/job/billing/job/${{env.SERVICE_NAME}}/"
+          job_params: |
+            {
+              "BRANCH": ${{ env.BRANCH }}
+            }
+              
+        
+       
