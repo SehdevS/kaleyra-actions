@@ -1,8 +1,9 @@
 name: Trigger Jenikins Build
 on:
-  push:
-    branches: 
-      - 'master'
+    # pull_request:
+    #     types: [opened, synchronize, reopened]
+    push:
+        branches: [stage, master]
     paths:
       - 'bills-consumer/**'
       - 'bills-service/**'
@@ -36,13 +37,13 @@ jobs:
         if: contains(env.BRANCH, 'master')
         run: |
             echo "JENKINS_URL=${{ vars.CICD_PP_URL }}" >> $GITHUB_ENV
-            echo "JENKINS_TOKEN=${{ vars.CICD_PP }}" >> $GITHUB_ENV 
+            echo "JENKINS_TOKEN=${{ secrets.CICD_PP_JENKINS_TOKEN }}" >> $GITHUB_ENV 
             
       - name: Determine if Dev or Stage branch
         if: contains(env.BRANCH, 'stage') || contains(env.BRANCH, 'develop')
         run: |
             echo "JENKINS_URL=${{ vars.CICD_SANDBOX_URL }}" >> $GITHUB_ENV
-            echo "JENKINS_TOKEN=${{ vars.CICD_SANDBOX }}" >> $GITHUB_ENV 
+            echo "JENKINS_TOKEN=${{ secrets.CICD_SANDBOX_JENKINS_TOKEN }}" >> $GITHUB_ENV 
                  
       - name: Triggering Jenkins Build
         uses: toptal/jenkins-job-trigger-action@master

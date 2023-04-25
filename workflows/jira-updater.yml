@@ -3,6 +3,8 @@ name: Jira Updater
 on:
   pull_request:
       types: [opened, synchronize, reopened]
+  push:
+      branches: [stage, master, develop]
       
 jobs:
   jira-comment:
@@ -25,7 +27,7 @@ jobs:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_BASE_URL: ${{ secrets.JIRA_URL }}
           PULL_REQUEST_URL: ${{ github.event.pull_request.html_url }}
-          PR_MESSAGE: ${{ github.event.pull_request.title }}
+          PR_MESSAGE: "${{ github.event.pull_request.title \n github.event.pull_request.html_url || github.event.head_commit.url }}"
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
           GIT_TOKEN: ${{ secrets.PR_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
