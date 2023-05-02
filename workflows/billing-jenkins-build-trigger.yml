@@ -1,0 +1,106 @@
+name: Trigger Jenikins Build
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+    push:
+        branches: [develop, stage, master, test]
+    workflow_dispatch:
+
+jobs:
+# JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    steps:
+    # For pull requests it's not necessary to checkout the code
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+    - uses: dorny/paths-filter@v2.2.1
+      id: filter
+      with:
+        filters: |
+          bills-consumer:
+            - 'bills-consumer/**'
+          bills-service:
+            - 'bills-service/**'
+          bills:
+            - 'bills/**'
+          kbus-integration:
+            - 'kbus-integration/**'
+
+    # JOB to build and test bills-consumer code
+    - name: bills-consumer
+      if: steps.filter.outputs.bills-consumer == 'true'
+      run: echo "SERVICE_NAME=bills-consumer" >> $GITHUB_ENV
+
+    # JOB to build and test bills-service code
+    - name: bills-service
+      if: steps.filter.outputs.bills-service == 'true'
+      run: echo "SERVICE_NAME=bills-service" >> $GITHUB_ENV
+
+    # JOB to build and test bills code
+    - name: bills
+      if: steps.filter.outputs.bills == 'true'
+      run: echo "SERVICE_NAME=bills" >> $GITHUB_ENV
+
+    # JOB to build and test bills code
+    - name: kbus-integration
+      if: steps.filter.outputs.kbus-integration == 'true'
+      run: echo "SERVICE_NAME=kbus-integration" >> $GITHUB_ENV
+
+    - name: Determine if master branch
+      if: github.ref_name == 'master'
+      run: |
+          echo "JENKINS_URL=${{ vars.CICD_PP_URL }}" >> $GITHUB_ENV
+          echo "JENKINS_TOKEN=${{ secrets.CICD_PP_JENKINS_TOKEN }}" >> $GITHUB_ENV 
+          
+    - name: Determine if Dev or Stage branch
+      if: github.ref_name == 'stage'|| 'develop' || 'test'
+      run: |
+          echo "JENKINS_URL=${{ vars.CICD_SANDBOX_URL }}" >> $GITHUB_ENV
+          echo "JENKINS_TOKEN=${{ secrets.CICD_SANDBOX_JENKINS_TOKEN }}" >> $GITHUB_ENV 
+                
+    - name: Triggering Jenkins Build
+      uses: toptal/jenkins-job-trigger-action@master
+      with:
+        jenkins_url: ${{ env.JENKINS_URL }}
+        jenkins_user: ${{ secrets.CICD_USERNAME }}
+        jenkins_token: ${{ env.JENKINS_TOKEN }}
+        job_name: "builds/job/core/job/billing/job/${{env.SERVICE_NAME}}/"
+        job_params: |
+          {
+            "BRANCH": "${{ github.ref_name }}"
+          }
+        async: "true"
+        
+        
+    - name: Slack Notifier
+      id: slack
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        # Slack channel id, channel name, or user id to post message.
+        # See also: https://api.slack.com/methods/chat.postMessage#channels
+        channel-id: 'C05045MCZ7Z'
+        # For posting a rich message using Block Kit
+        payload: |
+          {
+            "text": "User: ${{ github.actor }} has raised a CR to ${{ github.event.repository.name }} => ${{ github.ref_name }}",
+            "attachments": [
+              {
+                "pretext": "\nGitHub Action: ${{ github.workflow }}-${{ github.head_ref || github.run_id }} \nCR: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+                "color": "28a745",
+                "fields": [
+                  {
+                    "title": "Jenkins job details",
+                    "short": false,
+                    "value": "\n${{ env.JENKINS_URL }}/job/builds/job/core/job/billing/job/${{env.SERVICE_NAME}}/"
+                  }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.CICD_NOTIFIER_SLACK_BOT_TOKEN }}
+              
+        
+       

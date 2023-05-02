@@ -3,7 +3,7 @@ on:
   pull_request:
       types: [opened, synchronize, reopened]
   push:
-      branches: [develop, stage, master]
+      branches: [develop, stage, master, test]
 jobs:
   job_name:
     name: Trigger Jenikins Build
@@ -49,16 +49,16 @@ jobs:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": "User: ${{ github.actor }} has raised a Change on BRANCH: ${{ env.BRANCH }}",
+              "text": "User: ${{ github.actor }} has raised a CR to ${{ github.event.repository.name }} => ${{ github.ref_name }}",
               "attachments": [
                 {
-                  "pretext": "\nGitHub Action url: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+                  "pretext": "\nGitHub Action: ${{ github.event.workflow_run.jobs_url }} \nCR: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
                   "color": "28a745",
                   "fields": [
                     {
-                      "title": "Jenkins URL",
+                      "title": "Jenkins job details",
                       "short": false,
-                      "value": "\n${{ env.JENKINS_URL }}/job/builds/job/core/job/${{ github.event.repository.name }}/"
+                      "value": "\n${{ env.JENKINS_URL }}/job/builds/job/core/job/billing/job/${{env.SERVICE_NAME}}/"
                     }
                   ]
                 }
