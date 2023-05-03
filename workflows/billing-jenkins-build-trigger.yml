@@ -1,9 +1,10 @@
 name: Trigger Jenikins Build
 on:
-    pull_request:
-        types: [opened, synchronize, reopened]
+    #pull_request:
+        #types: [opened, synchronize, reopened]
     push:
         branches: [develop, stage, master, test]
+    
     workflow_dispatch:
 
 jobs:
@@ -14,40 +15,26 @@ jobs:
     # For pull requests it's not necessary to checkout the code
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 1
-    - uses: dorny/paths-filter@v2.2.1
-      id: filter
-      with:
-        filters: |
-          bills-consumer:
-            - 'bills-consumer/**'
-          bills-service:
-            - 'bills-service/**'
-          bills:
-            - 'bills/**'
-          kbus-integration:
-            - 'kbus-integration/**'
-
-    # JOB to build and test bills-consumer code
-    - name: bills-consumer
-      if: steps.filter.outputs.bills-consumer == 'true'
-      run: echo "SERVICE_NAME=bills-consumer" >> $GITHUB_ENV
-
-    # JOB to build and test bills-service code
-    - name: bills-service
-      if: steps.filter.outputs.bills-service == 'true'
-      run: echo "SERVICE_NAME=bills-service" >> $GITHUB_ENV
-
-    # JOB to build and test bills code
-    - name: bills
-      if: steps.filter.outputs.bills == 'true'
-      run: echo "SERVICE_NAME=bills" >> $GITHUB_ENV
-
-    # JOB to build and test bills code
-    - name: kbus-integration
-      if: steps.filter.outputs.kbus-integration == 'true'
-      run: echo "SERVICE_NAME=kbus-integration" >> $GITHUB_ENV
-
+        fetch-depth: 0
+    - name: get changed files
+      id: getfile
+      run: |
+        echo "FILES= $( git diff --name-only ${{ github.event.before }} ${{ github.sha }} )" >> $GITHUB_ENV
+        
+    - name: get changed files
+      run: |
+        if echo "${{ env.FILES }}" | awk '/bills-consumer\//{found=1} END{exit !found}'; then
+            echo "SERVICE_NAME=bills-consumer" >> $GITHUB_ENV
+        elif echo "${{ env.FILES }}" | awk '/bills-service\//{found=1} END{exit !found}'; then
+            echo "SERVICE_NAME=bills-service" >> $GITHUB_ENV
+        elif echo "${{ env.FILES }}" | awk '/bills\//{found=1} END{exit !found}'; then
+            echo "SERVICE_NAME=bills" >> $GITHUB_ENV
+        elif echo "${{ env.FILES }}" | awk '/kbus-integration\//{found=1} END{exit !found}'; then
+            echo "SERVICE_NAME=kbus-integration" >> $GITHUB_ENV
+        else
+            echo "changes ${{ env.FILES }}"
+        fi   
+      
     - name: Determine if master branch
       if: github.ref_name == 'master'
       run: |
@@ -61,18 +48,18 @@ jobs:
           echo "JENKINS_TOKEN=${{ secrets.CICD_SANDBOX_JENKINS_TOKEN }}" >> $GITHUB_ENV 
                 
     - name: Triggering Jenkins Build
+      id: jenkins-job
       uses: toptal/jenkins-job-trigger-action@master
       with:
         jenkins_url: ${{ env.JENKINS_URL }}
         jenkins_user: ${{ secrets.CICD_USERNAME }}
         jenkins_token: ${{ env.JENKINS_TOKEN }}
-        job_name: "builds/job/core/job/billing/job/${{env.SERVICE_NAME}}/"
+        job_name: "builds/job/core/job/billing/job/${{ env.SERVICE_NAME }}/"
         job_params: |
           {
             "BRANCH": "${{ github.ref_name }}"
           }
         async: "true"
-        
         
     - name: Slack Notifier
       id: slack
@@ -101,6 +88,3 @@ jobs:
           }
       env:
         SLACK_BOT_TOKEN: ${{ secrets.CICD_NOTIFIER_SLACK_BOT_TOKEN }}
-              
-        
-       
