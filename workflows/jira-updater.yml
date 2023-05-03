@@ -34,6 +34,6 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
           GIT_TOKEN: ${{ secrets.PR_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_MESSAGE: ${{ github.event.pull_request.title }}
           REPO_NAME: ${{ github.repository }}
           TARGET_BRANCH: ${{ github.base_ref }}
