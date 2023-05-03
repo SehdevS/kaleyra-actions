@@ -1,7 +1,7 @@
 name: Trigger Jenikins Build
 on:
-  pull_request:
-      types: [opened, synchronize, reopened]
+  #pull_request:
+      #types: [opened, synchronize, reopened]
   push:
       branches: [develop, stage, master, test]
 jobs:
