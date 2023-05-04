@@ -1,4 +1,4 @@
-name: Trigger Jenikins Build
+name: Trigger Jenkins Build
 on:
   #pull_request:
       #types: [opened, synchronize, reopened]
@@ -6,7 +6,7 @@ on:
       branches: [develop, stage, master, test]
 jobs:
   job_name:
-    name: Trigger Jenikins Build
+    name: Jenkins Build
     runs-on: ubuntu-latest
     env:
       BRANCH: ${{ github.ref_name }}
@@ -30,7 +30,6 @@ jobs:
           jenkins_url: ${{ env.JENKINS_URL }}
           jenkins_user: ${{ secrets.CICD_USERNAME }}
           jenkins_token: ${{ env.JENKINS_TOKEN }}
-          # proxy: ${{ secrets.JENKINS_PROXY }}
           job_name: "/builds/job/core/job/${{ github.event.repository.name }}/"
           job_params: |
             {
@@ -49,7 +48,7 @@ jobs:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": "User: ${{ github.actor }} has raised a CR to ${{ github.event.repository.name }} => ${{ github.ref_name }}",
+              "text": "User: ${{ github.actor }} has raised a CR to repo: ${{ github.event.repository.name }} => Branch: ${{ github.ref_name }}",
               "attachments": [
                 {
                   "pretext": "\nGitHub Action: ${{ github.event.workflow_run.jobs_url }} \nCR: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
