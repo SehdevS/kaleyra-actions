@@ -4,6 +4,11 @@ on:
         #types: [opened, synchronize, reopened]
     push:
         branches: [develop, stage, master, test]
+        paths:
+        - 'bills-consumer/**'
+        - 'bills-service/**'
+        - 'bills/**'
+        - 'kbus-integration/**'
     
     workflow_dispatch:
 
@@ -21,7 +26,8 @@ jobs:
       run: |
         echo "FILES= $( git diff --name-only ${{ github.event.before }} ${{ github.sha }} )" >> $GITHUB_ENV
         
-    - name: get changed files
+    - name: get changed folder
+      id: getfolder
       run: |
         if echo "${{ env.FILES }}" | awk '/bills-consumer\//{found=1} END{exit !found}'; then
             echo "SERVICE_NAME=bills-consumer" >> $GITHUB_ENV
@@ -33,8 +39,10 @@ jobs:
             echo "SERVICE_NAME=kbus-integration" >> $GITHUB_ENV
         else
             echo "changes ${{ env.FILES }}"
-        fi   
-      
+            echo "servicenamepresent=YES" >> $GITHUB_OUTPUT
+            exit 0
+        fi
+
     - name: Determine if master branch
       if: github.ref_name == 'master'
       run: |
@@ -88,3 +96,4 @@ jobs:
           }
       env:
         SLACK_BOT_TOKEN: ${{ secrets.CICD_NOTIFIER_SLACK_BOT_TOKEN }}
+                  
