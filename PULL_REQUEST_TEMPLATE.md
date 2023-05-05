@@ -1,5 +1,5 @@
 # Description
-PR Titel must have the jira id like: "JIRA-123 This is new some interesting PR"
+PR Title must have the jira id like: "JIRA-123 This is new some interesting PR"
 
 Please include a summary of the changes. Please also include relevant motivation and context. List any dependencies that are required for this change.
 
